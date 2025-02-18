@@ -2,6 +2,7 @@
 
 'use strict';
 const prompt = require("prompt-sync")();
+const util = require('node:util');
 const cakeRecipes = require("./cake-recipes.json");
 // apparently I do not need to JSON.parse() method, this list because the require function automatically does so. 
 
@@ -92,12 +93,13 @@ const getAllIngredients = (recipeList) => {
 
 // logging Function 6: 
 console.log("\n LOGGING FUNCTION 6: 'GET ALL INGREDIENTS");
-const savedRecipes = JSON.parse(JSON.stringify(cakeRecipes.slice(0, 5))); //Making a deep copy of the saved cakeRecipes. So future seperate modificatons can be made. 
-console.log(getAllIngredients(savedRecipes));
+let savedRecipes = JSON.parse(JSON.stringify(cakeRecipes.slice(0, 5))); //Made a deep copy of some cakeRecipes (so future mutations can be made) to act as the savedRecipe list of users/. 
+console.log(getAllIngredients(savedRecipes));                           // savedRecipes is saved as a global value so it is easy to reusable.
 
 
 
-// Part 2
+// PART 2: RECIPE MANEGEMENT SYSTEM
+// a do...while loop that handles user choices through a switch statement.
 
 const displayMenu = () => {
   console.log("\nRecipe Management System Menu:");
@@ -121,38 +123,63 @@ do {
     case 1:
       console.log("1. Show All Authors");
       console.log("2. Show Authors of your Saved Recipes");
-      let authorListChoice = prompt("Enter a number (1-2) or 0 to go back to the menu.");
+      let authorListChoice = prompt("Enter a number (1-2) or 0 to go back to the menu. ");
       authorListChoice = parseInt(authorListChoice); // Parse the choice as a integrer 
       
-      switch (authorListChoice) {
+      switch (authorListChoice) { //bringing in a nested switch statement here. 
         case 1:
+          console.log("All authors: ");
           console.log(getUniqueAuthors(cakeRecipes));
           break;
         case 2:
+          console.log("The authors of your saved recipes: ");
           console.log(getUniqueAuthors(savedRecipes));
           break;
         case 0:
           break;
         default: 
-          console.log("Invalid input, please enter a valid number.")
+          console.log("\nInvalid input, please enter a valid number.");
       }
 
       break;
     case 2:
-      let choiceAuthor = prompt("Insert Author:"); 
-      console.log(`The recipes by ${choiceAuthor}: \n`);
-      console.log(getRecipesbyAuthor(cakeRecipes, choiceAuthor));
+      let choiceAuthor = prompt("Insert Author: "); 
+      console.log(`\nThe recipes by ${choiceAuthor}: \n`);
+      logRecipeNames((getRecipesbyAuthor(cakeRecipes, choiceAuthor)));
       
       break;
     case 3:
-      let choiceIngredient = prompt("Insert Ingredient:");
-      console.log(`The recipes containing ${choiceIngredient}: \n`);
-      console.log(getRecipesbyIngredient(cakeRecipes, choiceIngredient));
+      let choiceIngredient = prompt("Insert ingredient: ");
+      console.log(`\nThe recipes containing ${choiceIngredient}: \n`);
+      logRecipeNames((getRecipesbyIngredient(cakeRecipes, choiceIngredient)));
 
       break;
     case 4:
-      let choiceName = prompt("Insert recipe name:");
-      console.log(getRecipebyName(cakeRecipes, choiceName));
+      let choiceName = prompt("Insert recipe name: ");
+      let recipeByName = (getRecipebyName(cakeRecipes, choiceName));
+      
+      if (!recipeByName) {
+        console.log ("\nSorry, there is no recipe by this name. "); //If the prompt does not bring up a recipe, it will tell the user. 
+        break;
+      } else {
+        console.log(recipeByName); //First show recipe to user, after ask whether user wants to save recipe. 
+        let saveChoice = prompt("Would you like to save this recipe? (Y/N): ").toUpperCase();  
+        if (saveChoice === "Y") {
+          if (savedRecipes.some(recipe => util.isDeepStrictEqual(recipe, recipeByName))) { //check if the recipe (object) is already saved or not using util library. 
+            console.log("\nThis recipe is already saved. Your saved recipes:");            //Can't check this by recipe name because there are some distinct recipes have similar name. 
+            logRecipeNames(savedRecipes);
+          } else {
+            savedRecipes.push(recipeByName);
+            console.log("\nYour saved recipes: \n");
+            logRecipeNames(savedRecipes);
+          }
+        } 
+        else if (saveChoice === "N") {
+        break;
+        } else {
+          console.log ("\nPlease answer Y/N. ");   //This brings us back to the main menu, alternatively, the choiceName prompt and prompts in other cases could be asked again in a loop. 
+        }
+      }
 
         break;
     case 5:
@@ -163,9 +190,9 @@ do {
 
       break;
     case 0:
-      console.log("Exiting...");
+      console.log("\nExiting...");
       break;
     default:
-      console.log("Invalid input. Please enter a number between 0 and 5.");
+      console.log("\nInvalid input. Please enter a number between 0 and 5.");
   }
-} while (choice !== 0);
+} while (choice !== 0); 
